@@ -1,0 +1,140 @@
+:root {
+  --background: #fdf6e4;
+  --foreground: #576970;
+  --border-color:#F2EBDA;
+  --omni-bar-font-color: #bdc7ca;
+  height: 100vh;
+  --font-primary: 'Ubuntu Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
+  line-height: 1.5
+}
+
+html, body, main, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+ul, li {
+  list-style: none;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-primary);
+  width: 100%;
+  margin: 0 auto;
+}
+
+textarea {
+  /* Total reset */
+  appearance: none;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  
+  /* Focus-states */
+  &:focus {
+    outline: 2px solid transparent;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  /* Selection */
+  &::selection {
+    background: #dbeafe; /* Blå men diskret */
+    color: #1e293b;
+  }
+}
+
+/* omnibar */
+
+.omni-bar {
+  width: 100%;
+  height: 2rem;
+  background: #000;
+  color: var(--omni-bar-font-color);
+  padding: 0 1rem 0 1rem;
+}
+
+
+/* note wrapper */
+
+.note-taker-wrapper {
+  display: flex;
+  flex-direction: row-reverse;
+  height: 100vh;
+}
+
+.column {
+  height: 100vh;
+}
+
+.column-left {
+  flex: 1;
+}
+.column-right {
+  flex: 2;
+}
+
+
+/* current note */
+
+.form {
+  height: 100%;
+}
+
+textarea.current-note {
+  width: 100%;
+  height: 80%;
+  resize: none;
+  font-size: 1.2rem;
+  font-family: var(--font-primary);
+  color: var(--foreground);
+  font-weight:500;
+  padding:1rem;
+}
+textarea.current-note:hover {
+  border: 0;
+}
+
+button.submit {
+  width: 10rem;
+  height: 3rem;
+  background-color:#576970;
+}
+
+/** list of notes **/
+
+ul.notes-list {
+  height:100%;
+  margin: 0;
+  padding: 0;
+  border-right:1px solid var(--border-color);
+}
+
+.notes-list > li button:nth-child(even) {
+  background: #f8fafc;
+}
+.notes-list > li:nth-child(odd) {
+  background: var(--border-color);
+}
+
+.notes-list li input.editable-note {
+  font-weight: 400;
+  height: 100%;
+  width: 100%;
+  font-size: 24px;
+  font-family: var(--font-primary);
+  background:transparent;
+  border:0;
+  color: var(--foreground);
+  font-size: 1rem;
+  text-align: left;
+  padding-left: 0.5rem;
+}
+
+.notes-list li input.editable-note:active {
+  background-color:#1e293b;
+  color: #fff;
+}
+

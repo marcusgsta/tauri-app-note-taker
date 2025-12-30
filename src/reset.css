@@ -1,0 +1,81 @@
+/* === CSS RESET === */
+
+/* Ta bort alla margin/padding så vi börjar rent */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Ge html/body full höjd för flex/grid-uppsättningar */
+html, body {
+  height: 100%;
+}
+
+/* Förhindra text som hoppar vid scrollbars */
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Grundläggande text & rendering */
+body {
+  line-height: 1.5;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+
+/* Bilder och media: aldrig spränga sin container */
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* Formelement: ärv font och storlek */
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}
+
+/* Textareas: ingen resize, ingen blå outline */
+textarea {
+  resize: none;
+  appearance: none;
+  outline: none;
+  border: none;
+  background: transparent;
+}
+
+/* Länkar - neutraliseras och kan stylas globalt */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Listor: ta bort bullets och spacing */
+ul, ol {
+  list-style: none;
+}
+
+/* Inaktivera animationer för användare som föredrar det */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
