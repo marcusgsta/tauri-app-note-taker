@@ -9,6 +9,7 @@
     "fs:allow-write-text-file",
     "fs:allow-create",
     "fs:allow-mkdir", 
+    "fs:allow-rename",
     {
       "identifier": "fs:scope-document-recursive",
       "allow": [{ "path": "~/Documents/note-taker/**" }]

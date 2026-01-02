@@ -5,8 +5,7 @@ import { Note } from "./types";
 export const showContextMenu = async (
   e: React.MouseEvent,
    note: Note,
-  focusEditableNoteItem: (id: {id: string}) => void,
-  onEditStart: (id: string) => void
+  focusEditableNoteItem: (id: {id: string}) => void
 ) => {
     console.log("🖱️ Context menu triggered for:", note.id);
   e.preventDefault();
@@ -21,7 +20,6 @@ export const showContextMenu = async (
         action: () => {
             console.log('rename pressed');
             focusEditableNoteItem({id : note.id});
-            onEditStart(note.id);
             
           },
       } as MenuItemOptions,

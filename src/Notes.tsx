@@ -1,4 +1,4 @@
-import { forwardRef, memo, useEffect, useImperativeHandle, useRef, useState } from "react"
+import { forwardRef, memo, ReactNode, useEffect, useImperativeHandle, useRef, useState } from "react"
 import { showContextMenu } from "./contextMenu"
 import { Note } from "./types"
 
@@ -7,39 +7,48 @@ interface NotesProps {
     selectNote: (id: string) => void;
     handleNoteTitleUpdate: (id: string, title: string) => void;
     inputRefs: React.RefObject<(HTMLInputElement | null)[]>;
+    currentNoteId: string;
 }
 
-export const Notes = memo(({ notes, selectNote, handleNoteTitleUpdate, inputRefs }
-    : NotesProps) => {
+interface NoteItemProps {
+    note: Note;
+    isEditing: boolean;
+    onEditStart: () => void;
+    onEditEnd: () => void;
+    handleNoteTitleUpdate: (id: string, title: string) => void;
+}
 
-    interface NoteItemProps {
-        note: Note;
-    }
-
+function NotesComponent({ 
+    notes, 
+    selectNote, 
+    handleNoteTitleUpdate, 
+    inputRefs,
+    currentNoteId,
+} : NotesProps): ReactNode {
     const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
 
     const findInputByNoteId = (noteId: string): HTMLInputElement | null => {
         const noteIndex = notes.findIndex(note => note.id === noteId);
-        if (noteIndex === -1) return null;
-        
-        return inputRefs.current[noteIndex] || null;
+        return noteIndex !== -1 ? inputRefs.current[noteIndex] || null : null;
       }
 
     const focusEditableNote = ({id}: {id: string}) => {
         setEditingNoteId(id);
-
-        // Focus after re-render
+        selectNote(id)
         setTimeout(() => {
             const input = findInputByNoteId(id);
             input?.focus();
-        }, 0);  // Next tick after state update
-    }
+        }, 0);
+    };
 
-    const EditableNoteItem = forwardRef<HTMLInputElement, NoteItemProps & {
-        isEditing: boolean,
-        onEditStart: () => void,
-        onEditEnd: () => void }>(
-        ({note, isEditing,onEditStart, onEditEnd}, ref) => {
+    const EditableNoteItem = forwardRef<HTMLInputElement, NoteItemProps>(
+        ({
+        note,
+        isEditing,
+        onEditStart,
+        onEditEnd,
+        handleNoteTitleUpdate,
+        }, ref) => {
 
         const localRef = useRef<HTMLInputElement>(null);
         const [editValue, setEditValue] = useState(note.title);
@@ -47,24 +56,21 @@ export const Notes = memo(({ notes, selectNote, handleNoteTitleUpdate, inputRefs
         useEffect(() => {
             if (isEditing) {
                 setEditValue(note.title);
+                if (localRef.current) {
+                    localRef.current?.focus();
+                    localRef.current?.select();
+                }
             }
         }, [isEditing, note.title]);
 
-        useEffect(() => {
-            if (isEditing && localRef.current) {
-                localRef.current.focus();
-                localRef.current.select();
-            }
-        }, [isEditing]);
-
         const handleContextMenu = (e: React.MouseEvent) => {
             e.preventDefault();
-            showContextMenu(e, note, focusEditableNote, onEditStart);
+            showContextMenu(e, note, focusEditableNote);
         };
 
         const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-            if (e.key === "Enter") {
-                handleNoteTitleUpdate(note.id, localRef.current!.value);
+            if (e.key === "Enter" && localRef.current) {
+                handleNoteTitleUpdate(note.id, localRef.current.value);
                 onEditEnd();
             } else if (e.key === "Escape") {
                 onEditEnd();
@@ -73,43 +79,45 @@ export const Notes = memo(({ notes, selectNote, handleNoteTitleUpdate, inputRefs
 
         const handleBlur = () => {
             if (isEditing && localRef.current) {
-                handleNoteTitleUpdate(note.id, (localRef.current.value));
+                handleNoteTitleUpdate(note.id, localRef.current.value);
                 onEditEnd();
             }
         }
 
-        useImperativeHandle(ref, () => localRef.current!);
+        useImperativeHandle(ref, () => localRef.current as HTMLInputElement);
                 
-        
         return (
             <li key={note.id}>
                 <input 
                 ref={localRef}
                 type="text"
-                className="editable-note"
+                className={currentNoteId === note.id ? `editable-note selected-note` : `editable-note`}
                 value={isEditing ? editValue : note.title}
-                readOnly={editingNoteId !== note.id}
+                readOnly={!isEditing}
                 onChange={isEditing ? (e) => setEditValue(e.target.value) : undefined}
                 onClick={!isEditing ? () => selectNote(note.id) : undefined }
                 onBlur={handleBlur}
-                onKeyDown={isEditing ? handleKeyDown : undefined}
+                onKeyDown={handleKeyDown}
                 onContextMenu={handleContextMenu}
-                >
-                </input>
+                />
             </li>
-        )
-    })
+            );
+        }
+    );
+
+    EditableNoteItem.displayName = "EditableNoteItem";
 
     const notesList = notes.map((note, index) => (
             <EditableNoteItem
-            isEditing={editingNoteId === note.id}
-            onEditStart={() => setEditingNoteId(note.id)}
-            onEditEnd={() => setEditingNoteId(null)}
-            ref={(el: HTMLInputElement | null) => {
-                inputRefs.current[index] = el;
-            }}
-            key={note.id}
-            note={note}
+                isEditing={editingNoteId === note.id}
+                onEditStart={() => setEditingNoteId(note.id)}
+                onEditEnd={() => setEditingNoteId(null)}
+                ref={(el: HTMLInputElement | null) => {
+                    inputRefs.current[index] = el;
+                }}
+                handleNoteTitleUpdate={handleNoteTitleUpdate}
+                key={note.id}
+                note={note}
             />
     ));
   
@@ -118,4 +126,7 @@ export const Notes = memo(({ notes, selectNote, handleNoteTitleUpdate, inputRefs
         {notesList}
       </ul>
     )
-  });
+  }
+
+  export const Notes = memo(NotesComponent);
+  NotesComponent.displayName = "Notes";

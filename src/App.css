@@ -97,12 +97,6 @@ textarea.current-note:hover {
   border: 0;
 }
 
-button.submit {
-  width: 10rem;
-  height: 3rem;
-  background-color:#576970;
-}
-
 /** list of notes **/
 
 ul.notes-list {
@@ -133,7 +127,7 @@ ul.notes-list {
   padding-left: 0.5rem;
 }
 
-.notes-list li input.editable-note:active {
+.notes-list li input.selected-note {
   background-color:#1e293b;
   color: #fff;
 }

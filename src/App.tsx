@@ -26,7 +26,7 @@ export default function Home() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [omniBarValue, setOmniBarValue] = useState('');
-  const [originalFilename, setOriginalFilename] = useState(currentNote.title);
+  const [originalFilename, setOriginalFilename] = useState('');
   const [hasPendingSave, setHasPendingSave] = useState(false);
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function Home() {
                 baseDir: BaseDirectory.Document
               })
               notesList.push({
-                id: file.name,
+                id: file.name.slice(0,12),
                 title: file.name.slice(0, -4),
                 content: content,
               });
@@ -79,8 +79,9 @@ export default function Home() {
   }, [initNotes]);
 
 
+  // auto save and rename logic
   useEffect(() => {
-    if (!currentNote.content.trim()) return;
+    if (!currentNote.title.trim()) return;
 
     const timeout = setTimeout(async () => {
       setIsSaving(true);
@@ -95,27 +96,29 @@ export default function Home() {
             { oldPathBaseDir: BaseDirectory.Document, newPathBaseDir:
               BaseDirectory.Document }
           );
-        } catch {
-        // No old file, create new
+        } catch (e) {
+        console.log('No old file to rename, creating new', e)
       }
     }
 
     await writeTextFile(path, currentNote.content, { baseDir:
-      BaseDirectory.Document });
-        setOriginalFilename(currentNote.title); // Sync after safe
+      BaseDirectory.Document 
+    });
+        setOriginalFilename(currentNote.title);
     } finally {
         setIsSaving(false);
     }
   }, 1000);
 
   return () => clearTimeout(timeout);
-  }, [currentNote.content, currentNote.title]);
+  }, [currentNote.content, currentNote.title, originalFilename]);
 
 
   const handleNoteTitleUpdate = (id: string, newTitle: string) => {
-    if (currentNote.id === id && originalFilename !== newTitle) {
+    if (currentNote.id === id) {
       setOriginalFilename(currentNote.title);
-      setHasPendingSave(true);
+
+      setCurrentNote(prev => prev ? {...prev, title: newTitle} : prev)
     }
     updateNoteTitle(id, newTitle);
   }
@@ -166,30 +169,39 @@ export default function Home() {
       content: "",
     });
 
-    setOmniBarValue(note ? note.title : "")
+    setOmniBarValue(note ? note.title : "");
+    setOriginalFilename(note ? note.title : "");
   }
 
   function createUniqueId() {
     const now = new Date();
     const year = now.getFullYear();
-    const month = now.getMonth() + 1;
-    const day = now.getDate();
+    const month = padZero(now.getMonth() + 1);
+    const day = padZero(now.getDate());
     const min = now.getMinutes();
     const sec = now.getSeconds();
 
     return `${year}${month}${day}${min}${sec}`
   }
 
+  function padZero(dayOrMonth: number) {
+    let dayOrMonthString: string = dayOrMonth.toString()
+    return dayOrMonthString.length == 1 ? `0${dayOrMonthString}` : dayOrMonthString;
+  }
+
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const editOmniBar = useCallback((value: string) => {
+  const VALID_FILENAME_REGEX = /^[a-zA-Z0-9_.\- )(]{1,255}$/;
 
-      if (!/^[a-zA-Z0-9\-_.\(\)\[\]\{\}\!\@\#\$\%\&\+\=]*$/.test(value)) {
+  const editOmniBar = useCallback((value: string) => {
+    
+      if (value !== "" && !VALID_FILENAME_REGEX.test(value)) {
       return;
     }
+    
     // search notes
     const filteredNotes = notes.filter(note =>
-      note.title.toLowerCase().startsWith(value.toLowerCase()
+      note.title.toLowerCase().includes(value.toLowerCase()
       ))
     
     setNotes(filteredNotes);
@@ -257,6 +269,7 @@ export default function Home() {
               inputRefs={inputRefs}
               selectNote={selectNote}
               handleNoteTitleUpdate={handleNoteTitleUpdate}
+              currentNoteId={currentNote.id}
               > 
               </Notes>
           </div>
@@ -280,8 +293,9 @@ function CurrentNote({ currentNote, setCurrentNote, updateNoteContent, createEmp
         className="current-note"
         value={currentNote.content || ''}
         onChange={(e) => {
+          const newContent = e.target.value;
           if (currentNote) {
-            updateNoteContent(currentNote.id, currentNote.title, currentNote.content); // autosave
+            updateNoteContent(currentNote.id, currentNote.title, newContent); // autosave
             setCurrentNote((prev: Note) => prev ? { ...prev, content: e.target.value }
               : null)
           }
