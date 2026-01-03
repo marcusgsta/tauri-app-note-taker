@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   rename,
@@ -14,8 +14,12 @@ import {
 import { OmniBar } from "./OmniBar";
 import { Note } from "./types";
 import { Notes } from "./Notes";
+import { CurrentNote } from "./CurrentNote";
+import { createUniqueId } from "./utils";
 
 export default function Home() {
+
+  const VALID_FILENAME_REGEX = /^[a-zA-Z0-9_.\- )(]{1,255}$/;
 
   const [currentNote, setCurrentNote] = useState<Note>({
     id: "",
@@ -24,10 +28,25 @@ export default function Home() {
   });
 
   const [notes, setNotes] = useState<Note[]>([]);
+  const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [omniBarValue, setOmniBarValue] = useState('');
   const [originalFilename, setOriginalFilename] = useState('');
-  const [hasPendingSave, setHasPendingSave] = useState(false);
+
+  const initNotes = useCallback(async () => {
+    try {
+      await mkdir('note-taker/', {
+        baseDir: BaseDirectory.Document,
+        recursive: true
+      });
+    } catch (error) {
+      console.log('Notes folder OK or already exists', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    initNotes();
+  }, [initNotes]);
 
   useEffect(() => {
     const loadNotes = async () => {
@@ -36,7 +55,6 @@ export default function Home() {
         const files = await readDir('note-taker/', {
           baseDir: BaseDirectory.Document,
         });
-
 
         for (const file of files) {
           if (file.name?.endsWith('.txt') && !file.isDirectory) {
@@ -62,23 +80,6 @@ export default function Home() {
     loadNotes();
   }, [])
 
-
-  const initNotes = useCallback(async () => {
-    try {
-      await mkdir('note-taker/', {
-        baseDir: BaseDirectory.Document,
-        recursive: true
-      });
-    } catch (error) {
-      console.log('Notes folder OK or already exists', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    initNotes();
-  }, [initNotes]);
-
-
   // auto save and rename logic
   useEffect(() => {
     if (!currentNote.title.trim()) return;
@@ -87,7 +88,7 @@ export default function Home() {
       setIsSaving(true);
       try {
         const path = `note-taker/${currentNote.title}.txt`;
-        // Always try rename first if we have an original filename
+        // Try rename first if we have an original filename
       if (originalFilename && originalFilename !== currentNote.title) {
         try {
           await rename(
@@ -111,7 +112,7 @@ export default function Home() {
   }, 1000);
 
   return () => clearTimeout(timeout);
-  }, [currentNote.content, currentNote.title, originalFilename]);
+  }, [currentNote.title, currentNote.content, originalFilename]);
 
 
   const handleNoteTitleUpdate = (id: string, newTitle: string) => {
@@ -124,7 +125,8 @@ export default function Home() {
   }
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
+    console.log("omnibarvalue", omniBarValue)
+    if (e.key === "Enter" && omniBarValue === "") {
       e.preventDefault();
       createNoteFromOmniBar(omniBarValue)
     }
@@ -173,25 +175,9 @@ export default function Home() {
     setOriginalFilename(note ? note.title : "");
   }
 
-  function createUniqueId() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = padZero(now.getMonth() + 1);
-    const day = padZero(now.getDate());
-    const min = now.getMinutes();
-    const sec = now.getSeconds();
-
-    return `${year}${month}${day}${min}${sec}`
-  }
-
-  function padZero(dayOrMonth: number) {
-    let dayOrMonthString: string = dayOrMonth.toString()
-    return dayOrMonthString.length == 1 ? `0${dayOrMonthString}` : dayOrMonthString;
-  }
-
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const VALID_FILENAME_REGEX = /^[a-zA-Z0-9_.\- )(]{1,255}$/;
+  
 
   const editOmniBar = useCallback((value: string) => {
     
@@ -199,38 +185,57 @@ export default function Home() {
       return;
     }
     
-    // search notes
-    const filteredNotes = notes.filter(note =>
+    const filtered = notes.filter(note =>
       note.title.toLowerCase().includes(value.toLowerCase()
       ))
-    
-    setNotes(filteredNotes);
-
+      console.log("notes", notes)
+    console.log("filtered", filtered)  
+    setFilteredNotes(filtered);
     setOmniBarValue(value);
-  }, [])
+    console.log("filteredNotes", filteredNotes)
+
+  }, [notes])
 
   const createNoteFromOmniBar = useCallback((value: string) => {
-
     if (value !== "") return;
-
     createEmptyNote()
-
   }, [])
 
   const createEmptyNote = useCallback(() => {
 
-    const id = createUniqueId();
+    let id = createUniqueId();
+    
     const newNote = {
       id: id,
       title: id,
       content: ''
     }
-    setNotes((prevNotes: Note[]) => [...prevNotes, newNote])
+    
+    setNotes((prevNotes: Note[]) => {
+      const exists = prevNotes.find(note => note.id === id);
+      if (exists) {
+        console.log("ID collision, adding one minute");
+        let prevNotesId = parseInt(exists.id) + 1;
+        id = prevNotesId.toString();
+        newNote.id = id;
+        newNote.title = id;
+        console.log(newNote)
+      }
+
+      return [...prevNotes, newNote]
+    });
     setCurrentNote(newNote)
     setOmniBarValue(newNote.title)
 
   }, [])
 
+  const sortedNotes = useMemo(() => {
+    return [...notes].sort((a, b) => {
+      const idA = parseInt(a.id.match(/(\d+)/)?.[1] || '0');
+      const idB = parseInt(b.id.match(/(\d+)/)?.[1] || '0');
+      return idB - idA;
+    })
+  }, [notes]);
 
   return (
     <>
@@ -265,7 +270,7 @@ export default function Home() {
 
           <div className="notes-list-wrapper column column-left">
             <Notes 
-              notes={notes} 
+              notes={filteredNotes.length > 0 ? filteredNotes : sortedNotes} 
               inputRefs={inputRefs}
               selectNote={selectNote}
               handleNoteTitleUpdate={handleNoteTitleUpdate}
@@ -280,32 +285,6 @@ export default function Home() {
   );
 }
 
-function CurrentNote({ currentNote, setCurrentNote, updateNoteContent, createEmptyNote }:
-  {
-    currentNote: Note,
-    setCurrentNote: any,
-    updateNoteContent: any
-    createEmptyNote: any
-  }) {
-  return (
-    <>
-      <textarea
-        className="current-note"
-        value={currentNote.content || ''}
-        onChange={(e) => {
-          const newContent = e.target.value;
-          if (currentNote) {
-            updateNoteContent(currentNote.id, currentNote.title, newContent); // autosave
-            setCurrentNote((prev: Note) => prev ? { ...prev, content: e.target.value }
-              : null)
-          }
-        }
-        }>
-      </textarea>
-      <button type="button" onClick={createEmptyNote}>Ny anteckning</button>
-    </>
-  )
-}
 
 
 

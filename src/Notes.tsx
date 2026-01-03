@@ -85,7 +85,7 @@ function NotesComponent({
         }
 
         useImperativeHandle(ref, () => localRef.current as HTMLInputElement);
-                
+
         return (
             <li key={note.id}>
                 <input 
