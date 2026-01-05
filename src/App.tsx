@@ -1,23 +1,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  rename,
-  writeTextFile,
-  readDir,
-  BaseDirectory,
-  mkdir,
-  readTextFile
-} from '@tauri-apps/plugin-fs';
-
-
 import { OmniBar } from "./OmniBar";
 import { Note } from "./types";
 import { Notes } from "./Notes";
 import { CurrentNote } from "./CurrentNote";
 import { createUniqueId } from "./utils";
+import  TauriNoteService from "./TauriNoteService";
 
 export default function Home() {
+
+  const noteService = useMemo(() => new TauriNoteService(), []);
 
   const VALID_FILENAME_REGEX = /^[a-zA-Z0-9_.\- )(]{1,255}$/;
 
@@ -33,52 +26,17 @@ export default function Home() {
   const [omniBarValue, setOmniBarValue] = useState('');
   const [originalFilename, setOriginalFilename] = useState('');
 
-  const initNotes = useCallback(async () => {
-    try {
-      await mkdir('note-taker/', {
-        baseDir: BaseDirectory.Document,
-        recursive: true
-      });
-    } catch (error) {
-      console.log('Notes folder OK or already exists', error);
-    }
-  }, []);
+  const loadNotes = useCallback(async () => {
+      const loadedNotes = await noteService.loadAll();
+      setNotes(loadedNotes);
+  }, [noteService])
 
   useEffect(() => {
-    initNotes();
-  }, [initNotes]);
-
-  useEffect(() => {
-    const loadNotes = async () => {
-      const notesList: Note[] = [];
-      try {
-        const files = await readDir('note-taker/', {
-          baseDir: BaseDirectory.Document,
-        });
-
-        for (const file of files) {
-          if (file.name?.endsWith('.txt') && !file.isDirectory) {
-            try {
-              const content = await readTextFile(`note-taker/${file.name}`, {
-                baseDir: BaseDirectory.Document
-              })
-              notesList.push({
-                id: file.name.slice(0,12),
-                title: file.name.slice(0, -4),
-                content: content,
-              });
-            } catch (error) {
-              console.error(`Could not read ${file.name}:`, error);
-            }
-          }
-        }
-        setNotes(notesList);
-      } catch (error) {
-        console.log('No notes or folder missing', error);
-      }
-    };
-    loadNotes();
-  }, [])
+    // create directory
+    noteService.initNotes().then(() => {
+      loadNotes();
+    })
+  }, [noteService, loadNotes])
 
   // auto save and rename logic
   useEffect(() => {
@@ -87,32 +45,17 @@ export default function Home() {
     const timeout = setTimeout(async () => {
       setIsSaving(true);
       try {
-        const path = `note-taker/${currentNote.title}.txt`;
-        // Try rename first if we have an original filename
-      if (originalFilename && originalFilename !== currentNote.title) {
-        try {
-          await rename(
-            `note-taker/${originalFilename}.txt`,
-            path,
-            { oldPathBaseDir: BaseDirectory.Document, newPathBaseDir:
-              BaseDirectory.Document }
-          );
-        } catch (e) {
-        console.log('No old file to rename, creating new', e)
-      }
-    }
-
-    await writeTextFile(path, currentNote.content, { baseDir:
-      BaseDirectory.Document 
-    });
+        await noteService.save(currentNote, originalFilename);
         setOriginalFilename(currentNote.title);
-    } finally {
+      } catch (error) {
+        console.error('Autosave failed:', error);
+      } finally {
         setIsSaving(false);
     }
   }, 1000);
 
   return () => clearTimeout(timeout);
-  }, [currentNote.title, currentNote.content, originalFilename]);
+  }, [currentNote.title, currentNote.content, originalFilename, noteService]);
 
 
   const handleNoteTitleUpdate = (id: string, newTitle: string) => {
