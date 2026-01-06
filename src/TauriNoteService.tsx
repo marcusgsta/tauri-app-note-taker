@@ -1,4 +1,4 @@
-import { BaseDirectory, mkdir, readDir, readTextFile, rename, writeTextFile } from "@tauri-apps/plugin-fs";
+import { BaseDirectory, mkdir, readDir, readTextFile, remove, rename, writeTextFile } from "@tauri-apps/plugin-fs";
 import { Note } from "./types";
 
 export default class TauriNoteService {
@@ -38,6 +38,18 @@ export default class TauriNoteService {
             await writeTextFile(path, note.content, { baseDir: this.baseDir });
         } catch (error) {
             console.error('Save failed', error)
+            throw error;
+        }
+    }
+
+    async delete(filename: string) {
+        try {
+            await remove(`note-taker/${filename}`, 
+                { baseDir: this.baseDir,
+                 })
+            console.log('File deleted:', filename)
+        } catch (error) {
+            console.error('Failed to delete file', error);
             throw error;
         }
     }

@@ -27,7 +27,8 @@ export default function Home() {
     updateNoteContent, 
     updateNoteTitle,
     createEmptyNote,
-    selectNote } = 
+    selectNote,
+    deleteNote } = 
   useNotesStore(noteService);
 
   const VALID_FILENAME_REGEX = /^[a-zA-Z0-9_.\- )(]{1,255}$/;
@@ -56,6 +57,10 @@ export default function Home() {
   }, [currentNote.title, currentNote.content, originalFilename, noteService]);
 
   // Handlers (thin wrappers)
+  const removeNote = useCallback(async ({id}: {id:string}) => {
+    await deleteNote(id);
+  }, [deleteNote]);
+
   const handleNoteTitleUpdate = useCallback((id: string, newTitle: string) => {
     if (currentNote.id === id) {
       setOriginalFilename(currentNote.title);
@@ -136,6 +141,7 @@ export default function Home() {
               selectNote={selectNoteHandler}
               handleNoteTitleUpdate={handleNoteTitleUpdate}
               currentNoteId={currentNote.id}
+              deleteNote={removeNote}
               > 
               </Notes>
           </div>

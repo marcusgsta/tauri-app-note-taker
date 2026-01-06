@@ -12,6 +12,18 @@ export const useNotesStore = (noteService: TauriNoteService) => {
     setNotes(loadedNotes);
   }, [noteService])
 
+  const deleteNote = useCallback(async (id: string) => {
+    const note = notes.find((n) => n.id === id);
+      
+    if (!note) {
+      console.log('Note not found');
+      return;
+    }
+    setNotes((prevNotes) => prevNotes.filter((n) => n.id !== id));
+    const filename = `${note.title}.txt`;
+    await noteService.delete(filename);
+  }, [noteService, notes]);
+
   // Update specific note
   const updateNoteContent = useCallback((
     id: string,
@@ -76,14 +88,7 @@ export const useNotesStore = (noteService: TauriNoteService) => {
     (id: string) => {
       return notes.find((note) => note.id === id);
 
-      // setCurrentNote(note ?? {
-      //   id: "",
-      //   title: "",
-      //   content: "",
     }, [notes]);
-
-  // setOmniBarValue(note ? note.title : "");
-  // setOriginalFilename(note ? note.title : "");
 
   // Sorted notes (memoized)
   const sortedNotes = useMemo(() => {
@@ -98,6 +103,7 @@ export const useNotesStore = (noteService: TauriNoteService) => {
     notes,
     filteredNotes,
     loadNotes,
+    deleteNote,
     updateNoteContent,
     updateNoteTitle,
     createEmptyNote,

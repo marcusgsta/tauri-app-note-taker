@@ -8,6 +8,7 @@ interface NotesProps {
     handleNoteTitleUpdate: (id: string, title: string) => void;
     inputRefs: React.RefObject<(HTMLInputElement | null)[]>;
     currentNoteId: string;
+    deleteNote: ({id}: {id:string}) => void;
 }
 
 interface NoteItemProps {
@@ -24,6 +25,7 @@ function NotesComponent({
     handleNoteTitleUpdate, 
     inputRefs,
     currentNoteId,
+    deleteNote,
 } : NotesProps): ReactNode {
     const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
 
@@ -65,7 +67,7 @@ function NotesComponent({
 
         const handleContextMenu = (e: React.MouseEvent) => {
             e.preventDefault();
-            showContextMenu(e, note, focusEditableNote);
+            showContextMenu(e, note, focusEditableNote, deleteNote);
         };
 
         const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
