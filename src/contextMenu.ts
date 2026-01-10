@@ -4,7 +4,7 @@ import { Note } from "./types";
 
 export const showContextMenu = async (
   e: React.MouseEvent,
-   note: Note,
+  note: Note,
   focusEditableNoteItem: (id: {id: string}) => void,
   deleteNote: (id: {id: string}) => void,
 ) => {

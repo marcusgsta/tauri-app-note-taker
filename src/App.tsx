@@ -134,6 +134,7 @@ export default function Home() {
               setCurrentNote={setCurrentNote}
               updateNoteContent={updateNoteContent}
               openNoteByTitle={openNoteByTitle}
+              notes={filteredNotes.length ? filteredNotes : sortedNotes}
             >
             </CurrentNote>
 
