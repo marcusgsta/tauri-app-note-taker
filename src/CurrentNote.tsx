@@ -1,3 +1,4 @@
+import { useCallback, useRef } from "react";
 import { Note } from "./types";
 
 
@@ -34,6 +35,18 @@ export function CurrentNote({ currentNote,
       });
     };
 
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    const handleScroll = useCallback(() => {
+      if (textareaRef.current) {
+        const mirror = textareaRef.current.parentElement?.querySelector('.note-mirror');
+        if (mirror) {
+          mirror.scrollTop = textareaRef.current.scrollTop;
+          mirror.scrollLeft = textareaRef.current.scrollLeft;
+        }
+      }
+    }, []);
+
   return (
     <div className="note-container">
       <div className="note-mirror">
@@ -41,6 +54,7 @@ export function CurrentNote({ currentNote,
       </div>
 
       <textarea
+      ref={textareaRef}
         className="note-textarea"
         value={content}
         onChange={(e) => {
@@ -52,6 +66,7 @@ export function CurrentNote({ currentNote,
             );
           }
         }}
+        onScroll={handleScroll}
       />
     </div>
   );
