@@ -1,6 +1,6 @@
 import { useCallback, useState, useMemo } from "react";
 import TauriNoteService from "./TauriNoteService";
-import { Note } from "./types";
+import { Note, NoteLink } from "./types";
 import { createUniqueId } from "./utils";
 
 export const useNotesStore = (noteService: TauriNoteService) => {
@@ -99,6 +99,22 @@ export const useNotesStore = (noteService: TauriNoteService) => {
     })
   }, [notes]);
 
+  const parseLinksFromContent = useCallback((content: string, noteId: string):
+  NoteLink[] => {
+    const links: NoteLink[] = [];
+    // match [[WikiLink]] syntax          
+    const wikiLinks = [...content.matchAll(/\[\[([^\]\|]+)(?:\|([^\]]+))?\]\]/g)];
+    wikiLinks.forEach(match => {
+      const targetTitle = match[1].trim();
+      const displayText = match[2]?.trim() || targetTitle;
+      // convert title to ID
+      const targetId = targetTitle.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() ||
+      targetTitle;
+      links.push({ source: noteId, target: targetId, text: `[[${displayText}]` });
+    });
+    return links;
+  }, []);
+
   return {
     notes,
     filteredNotes,
@@ -110,5 +126,6 @@ export const useNotesStore = (noteService: TauriNoteService) => {
     filterNotes,
     selectNote,
     sortedNotes,
+    parseLinksFromContent,
   };
 };

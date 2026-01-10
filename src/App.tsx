@@ -102,6 +102,11 @@ export default function Home() {
     }
   }, [omniBarValue, createNoteFromOmniBar]);
 
+  const openNoteByTitle = (title: string) => {
+    const id = title.slice(0,12);
+    selectNoteHandler(id)
+  } 
+
 
   return (
     <>
@@ -114,12 +119,12 @@ export default function Home() {
           handleKeyDown={handleKeyDown}>
         </OmniBar>
 
-        <div style={{ padding: '20px' }}>
+        {/* <div style={{ padding: '20px' }}>
           {isSaving && ' 💾 '}
           {currentNote.title && <div style={{ fontSize: '12px', color: 'green' }}>
             Saved: {currentNote.title.split('/').pop()}
           </div>}
-        </div>
+        </div> */}
 
         <div className="note-taker-wrapper">
 
@@ -128,7 +133,7 @@ export default function Home() {
               currentNote={currentNote}
               setCurrentNote={setCurrentNote}
               updateNoteContent={updateNoteContent}
-              createEmptyNote={createEmptyNote}
+              openNoteByTitle={openNoteByTitle}
             >
             </CurrentNote>
 
